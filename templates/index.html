@@ -3,10 +3,24 @@
 {% block title %}Main{% endblock %}
 
 {% block content %}
-  <div class="d-flex container py-4 justify-content-center flex-column align-baseline">
-    <div class="conteiner"><h1>Skaitļu spēle</h1></div>
-    <div class="conteiner"><h2>Virknes garums:</h2></div>
-    <div class="conteiner"><input type="text border-0" placeholder="enter...(15-20)"/></div>
+  <div class="d-flex container py-4 justify-content-center flex-column align-baseline w-50">
+    <h1 class="align-self-center display-1">Skaitļu spēle</h1>
+    <h2 class="align-self-center display-4">Virknes garums:</h2>
+    <form action="/options" method="POST" class="d-flex justify-content-between align-self-center w-75 gap-2">
+      <input
+        type="number"
+        name="length"
+        min="15"
+        max="20"
+        placeholder="enter...(15-20)"
+        class="display-5 border-0 w-100 text-center"
+        required
+      />
+      <button type="submit" class="btn btn-primary btn-lg align-baseline">Submit</button>
+    </form>
+  {% if error %}
+    <div class="alert alert-danger mt-3 text-center">{{ error }}</div>
+  {% endif %}
   </div>
   
 {% endblock %}
