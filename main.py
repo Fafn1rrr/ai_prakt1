@@ -20,6 +20,11 @@ class GameState:
         self.turn = not self.turn    
         
 # Algoritmi
+def heuristic(state):
+   a = 0.5 # a,b - koeficienti heiristiskajai funkcijai, tos var brīvi mainīt, galvenais, lai summa būtu 1.
+   b = 0.5
+    return a*(state.ai_points - state.human_points) + b*(4*count(state,4) + 3*count(state,3) + 2*count(state,2) + count(state,1))
+
 def minimax():
     return 0
 
@@ -118,3 +123,4 @@ def GameStart(numbers):
 length = user_input()
 if length is not None:
     GameStart(length)
+
