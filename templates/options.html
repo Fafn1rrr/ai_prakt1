@@ -3,6 +3,35 @@
 {% block title %}Options{% endblock %}
 
 {% block content %}
-  <h1>Options</h1>
-  <p>Virknes garums: <b>{{ length }}</b></p>
+  <div class="d-flex container py-4 justify-content-center flex-column align-baseline">
+    
+    <h1 class="align-self-center display-4">Virknes garums: <b>{{ length }}</b></h1>
+    <form action="/game" method="POST" class="d-flex flex-column align-self-center w-75 gap-2">
+      <input type="hidden" name="length" value="{{ length }}">
+      <h3 class="align-self-center ">Who start?</h3>
+      <div class="d-flex container py-4 justify-content-center gap-4 flex-row align-baseline">
+
+        <input type="radio" class="btn-check" name="starter" id="starter_human" value="human" checked>
+        <label class="btn btn-outline-primary" for="starter_human">Player</label>
+
+        <input type="radio" class="btn-check" name="starter" id="starter_ai" value="ai">
+        <label class="btn btn-outline-primary" for="starter_ai">Computer</label>
+        
+      </div>
+      <h3 class="align-self-center ">What algorithm?</h3>
+      <div class="d-flex container py-4 justify-content-center gap-4 flex-row align-baseline">
+
+        <input type="radio" class="btn-check" name="algo" id="algo_minimax" value="minimax" checked>
+        <label class="btn btn-outline-primary" for="algo_minimax">Minimaks</label>
+
+        <input type="radio" class="btn-check" name="algo" id="algo_ab" value="alphabeta">
+        <label class="btn btn-outline-primary" for="algo_ab">Alfa-beta</label>
+        
+      </div>
+      <button type="submit" class="btn btn-primary btn-lg align-baseline">Start game</button>
+    </form>
+  {% if error %}
+    <div class="alert alert-danger mt-3 text-center">{{ error }}</div>
+  {% endif %}
+  </div>
 {% endblock %}

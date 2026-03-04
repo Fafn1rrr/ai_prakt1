@@ -19,6 +19,9 @@ def options():
 
     return render_template("options.html", length=length)
 
+@app.route("/game", methods=["GET", "POST"])
+def game():
+    return render_template("game.html")
 
 if __name__ == "__main__":
     app.run(debug=True)
