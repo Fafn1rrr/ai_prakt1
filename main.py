@@ -1,4 +1,6 @@
 import numpy as np
+import copy
+import math
 
 # Datu struktūra
 class GameState:
@@ -25,8 +27,60 @@ def heuristic(state):
    b = 0.5
     return a*(state.ai_points - state.human_points) + b*(4*count(state,4) + 3*count(state,3) + 2*count(state,2) + count(state,1))
 
-def minimax():
-    return 0
+def minimax(state, depth):
+        """
+    Funkcija realizē minimax algoritmu.
+    
+    Tā atgriež:
+    best_value – labāko novērtējumu (stāvokļa vērtību)
+    best_move – labāko gājienu (piemēram ("take", i), ("split2", i), ("split4", i))
+
+    depth – cik dziļi tiek pārmeklēts spēles koks.
+    """
+
+    # Ja spēle ir beigusies (virkne tukša),
+    # tad aprēķinām precīzu rezultātu: AI punkti - cilvēka punkti.
+    # Šī ir terminālā virsotne spēles kokā.
+    if state.is_finish():
+        return (state.ai_points - state.human_points, None)
+
+    # dziļuma ierobežojums: evristika
+    if depth == 0:
+        return (heuristic(state), None)
+
+    moves = generate_moves(state)   # Ģenerējam visus iespējamos gājienus no pašreizējā stāvokļa.
+
+    # AI gājiens, kad state.turn == False -> maksimizācija
+    if not state.turn:
+        best_value = -math.inf
+        best_move = None
+
+        for move, idx in moves:
+            child = copy.deepcopy(state)
+            child = apply_move(child, move, idx)      # svarīgi: maina stāvokli un pārslēdz gājienu
+            value, _ = minimax(child, depth - 1)
+
+            if value > best_value:
+                best_value = value
+                best_move = (move, idx)
+
+        return (best_value, best_move)
+
+    # Cilvēka gājiens, kad state.turn == True -> minimizācija
+    else:
+        best_value = math.inf
+        best_move = None
+
+        for move, idx in moves:
+            child = copy.deepcopy(state)
+            child = apply_move(child, move, idx)
+            value, _ = minimax(child, depth - 1)
+
+            if value < best_value:
+                best_value = value
+                best_move = (move, idx)
+
+        return (best_value, best_move)         # Atgriežam minimālo vērtību un atbilstošo gājienu
 
 def alpha_beta():
     return 0
@@ -123,4 +177,5 @@ def GameStart(numbers):
 length = user_input()
 if length is not None:
     GameStart(length)
+
 
