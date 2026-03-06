@@ -239,7 +239,7 @@ def generate_moves(state):
 def user_input():
     try:
         length = int(input("please write length of the numbers from 15 to 20: \n"))
-        if length not in range(1,21):
+        if length not in range(5,21):
             print("Length must be between 15 and 20")
             return
         numbers = np.random.randint(1,5,size = length).tolist()
@@ -294,3 +294,4 @@ def choose_algorithm():
 length = user_input()
 if length is not None:
     GameStart(length)
+
