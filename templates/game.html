@@ -2,4 +2,90 @@
 {% block title %}Game{% endblock %}
 
 {% block content %}
+<div class="container py-4">
+
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+    <div>
+      <h1 class="mb-0">Game</h1>
+      <div class="text-muted">
+        Starter: <b>{{ starter }}</b> |
+        Algorithm: <b>{{ algo }}</b>
+      </div>
+    </div>
+
+    <div class="d-flex gap-2">
+      <a href="/restart" class="btn btn-outline-primary">Restart</a>
+      <a href="/" class="btn btn-outline-secondary">Home</a>
+    </div>
+  </div>
+
+  <hr>
+
+  <div class="row g-3">
+    <div class="col-md-4">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">Score</h5>
+          <p class="mb-1">Human: <b>{{ human_points }}</b></p>
+          <p class="mb-2">AI: <b>{{ ai_points }}</b></p>
+
+          <div>
+            Turn:
+            {% if turn == "human" %}
+              <span class="badge bg-success">Human</span>
+            {% else %}
+              <span class="badge bg-warning text-dark">AI</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      {% if finished %}
+      <div class="alert alert-info mt-3">
+        <h5 class="mb-1">Game finished!</h5>
+        <div>Winner: <b>{{ winner }}</b></div>
+        <div class="mt-2">
+          <a href="#" class="btn btn-primary">Start again</a>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="col-md-8">
+      <h5>Numbers</h5>
+
+      {% if numbers|length == 0 %}
+        <div class="text-muted">Sequence is empty.</div>
+      {% else %}
+        <div class="d-flex flex-wrap gap-2">
+          {% for n in numbers %}
+          <div class="card text-center" style="width: 150px;">
+            <div class="card-body p-2">
+              <div class="display-6">{{ n }}</div>
+
+              {# {% if (turn == "human") and (not finished) %} #}
+              <form method="POST" action="#" class="d-grid gap-1 mt-2">
+                <input type="hidden" name="index" value="{{ loop.index0 }}">
+                <button class="btn btn-sm btn-primary" name="action" value="take">Take</button>
+
+                {% if n == 2 %}
+                  <button class="btn btn-sm btn-outline-primary" name="action" value="split2">Split 2 → 1+1</button>
+                {% endif %}
+
+                {% if n == 4 %}
+                  <button class="btn btn-sm btn-outline-primary" name="action" value="split4">Split 4 → 2+2</button>
+                {% endif %}
+              </form>
+              {# {% else %} #}
+                <div class="text-muted small mt-2">No actions</div>
+              {# {% endif %} #}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
 {% endblock %}
