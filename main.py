@@ -1,14 +1,14 @@
 import numpy as np
-import copy
 import math
+import copy
 
-# Datu struktūra
 class GameState:
-    def __init__(self, numbers,human_points = 0, ai_points=0):
+    def __init__(self, numbers,turn,algorithm,human_points = 0, ai_points=0):
         self.numbers = numbers
         self.human_points = human_points
         self.ai_points = ai_points
-        self.turn = bool #true = human turn, false = ai_turn
+        self.turn = turn #true = human turn, false = ai_turn
+        self.algorithm = algorithm
     def is_finish(self):
         return len(self.numbers) == 0
     def print_state(self):
@@ -19,24 +19,9 @@ class GameState:
             print("Human turn")
         else: print("AI turn")
     def switch_turn(self):
-        self.turn = not self.turn    
-        
-# Algoritmi
-def heuristic(state):
-   a = 0.5 # a,b - koeficienti heiristiskajai funkcijai, tos var brīvi mainīt, galvenais, lai summa būtu 1.
-   b = 0.5
-    return a*(state.ai_points - state.human_points) + b*(4*count(state,4) + 3*count(state,3) + 2*count(state,2) + count(state,1))
+        self.turn = not self.turn       
 
 def minimax(state, depth):
-        """
-    Funkcija realizē minimax algoritmu.
-    
-    Tā atgriež:
-    best_value – labāko novērtējumu (stāvokļa vērtību)
-    best_move – labāko gājienu (piemēram ("take", i), ("split2", i), ("split4", i))
-
-    depth – cik dziļi tiek pārmeklēts spēles koks.
-    """
 
     # Ja spēle ir beigusies (virkne tukša),
     # tad aprēķinām precīzu rezultātu: AI punkti - cilvēka punkti.
@@ -59,10 +44,13 @@ def minimax(state, depth):
             child = copy.deepcopy(state)
             child = apply_move(child, move, idx)      # svarīgi: maina stāvokli un pārslēdz gājienu
             value, _ = minimax(child, depth - 1)
+        
 
             if value > best_value:
                 best_value = value
                 best_move = (move, idx)
+
+         
 
         return (best_value, best_move)
 
@@ -75,24 +63,25 @@ def minimax(state, depth):
             child = copy.deepcopy(state)
             child = apply_move(child, move, idx)
             value, _ = minimax(child, depth - 1)
+            
 
             if value < best_value:
                 best_value = value
                 best_move = (move, idx)
-
-        return (best_value, best_move)         # Atgriežam minimālo vērtību un atbilstošo gājienu
+                
+        return (best_value, best_move)
 
 def alpha_beta(state, depth, alpha=-math.inf, beta=math.inf):
     """
     Funkcija realizē minimax algoritmu ar alpha-beta atzarošanu.
 
     Tā atgriež:
-    best_value – labāko novērtējumu (stāvokļa vērtību)
-    best_move – labāko gājienu (piemēram ("take", i), ("split2", i), ("split4", i))
+    best_value - labāko novērtējumu (stāvokļa vērtību)
+    best_move - labāko gājienu (piemēram ("take", i), ("split2", i), ("split4", i))
 
-    depth – cik dziļi tiek pārmeklēts spēles koks
-    alpha – labākā (lielākā) vērtība, ko līdz šim garantē MAX spēlētājs
-    beta – labākā (mazākā) vērtība, ko līdz šim garantē MIN spēlētājs
+    depth - cik dziļi tiek pārmeklēts spēles koks
+    alpha - labākā (lielākā) vērtība, ko līdz šim garantē MAX spēlētājs
+    beta - labākā (mazākā) vērtība, ko līdz šim garantē MIN spēlētājs
     """
     # Ja spēle ir beigusies (virkne tukša),
     # tad aprēķinām precīzu rezultātu: AI punkti - cilvēka punkti.
@@ -159,9 +148,10 @@ def alpha_beta(state, depth, alpha=-math.inf, beta=math.inf):
         # Atgriežam minimālo vērtību un atbilstošo gājienu
         return (best_value, best_move)
 # Iespējamie gājieni
+
 def take(state,index):
     return state.numbers.pop(index)
-    
+
 def split2(state,index):
     state.numbers.pop(index)
     state.numbers.insert(index, 1)
@@ -174,17 +164,33 @@ def split4(state,index):
     state.numbers.insert(index, 2)
     return state
 
-def generate_moves(state):
-    moves = []
-    for i in range(len(state.numbers)):
-        moves.append(("take",i))
-        if state.numbers[i] == 2:
-            moves.append(("split2",i))
-        if state.numbers[i] == 4:
-            moves.append(("split4",i))    
-    return moves
+def human_move(state):
+    moves = generate_moves(state)
+    for i in range(len(moves)):
+        print(i, " ", moves[i]) 
+    while True:
+        try:
+            choice = int(input("Choose move number: "))
+            move = moves[choice]
+            state = apply_move(state, move[0], move[1])
+            break
+        except Exception as e:
+            print(e)
 
-def apply_move(state, move, index): # Izveidoju kā atsevišķu funkciju, lai nerakstītu kodu divreiz. Gājiens tiek pārslēgts šīs funkcijas beigās.
+def ai_move(state):
+    if state.algorithm: # True = minimax
+        _, move = minimax(state, depth=4)
+    else:               # False = alpha-beta
+        _, move = alpha_beta(state, depth=5)
+
+    if move is None:
+        return state
+    
+    action, index = move    
+    print("AI chooses: ", move)
+    state = apply_move(state, action, index)
+
+def apply_move(state, move, index):
     if move == "take":
         value = take(state, index)
         if state.turn:
@@ -204,31 +210,36 @@ def apply_move(state, move, index): # Izveidoju kā atsevišķu funkciju, lai ne
         else:
             state.human_points -= 1
     state.switch_turn()
-    return state                
+    return state                        
 
-# Spēlētāja gājiens
-def human_move(state):
-    moves = generate_moves(state)
-    for i in range(len(moves)):
-        print(i, " ", moves[i]) 
-    while True: # Cikls ir nepieciešams, lai lietotājs varētu atkārtoti ievadīt gājiena numuru, ja tiek ievadīta kļūdaina vērtība
-        try:
-            choice = int(input("Choose move number: "))
-            move = moves[choice]
-            state = apply_move(state, move[0], move[1])
-            break
-        except Exception as e:
-            print(e)
-# Datora gājiens
-def ai_move(state):
-    print("AI not working now")  
-    state.switch_turn() 
 
-# Input
+def heuristic(state):
+   a = 3
+   b = 2
+   return a*(state.ai_points - state.human_points) + b*(4*count(state,4) + 3*count(state,3) + 3*count(state,2) + count(state,1))
+
+def count(state,value):
+    numbers = state.numbers
+    count = 0
+    for i in numbers:
+        if i == value:
+            count += 1
+    return count        
+
+def generate_moves(state):
+    moves = []
+    for i in range(len(state.numbers)):
+        moves.append(("take",i))
+        if state.numbers[i] == 2:
+            moves.append(("split2",i))
+        if state.numbers[i] == 4:
+            moves.append(("split4",i))    
+    return moves
+
 def user_input():
     try:
         length = int(input("please write length of the numbers from 15 to 20: \n"))
-        if length not in range(15,21):
+        if length not in range(1,21):
             print("Length must be between 15 and 20")
             return
         numbers = np.random.randint(1,5,size = length).tolist()
@@ -236,20 +247,50 @@ def user_input():
         return numbers
     except Exception as e:
         print(e)
-# Spēles pamata loģika
+
 def GameStart(numbers):
-    newGame = GameState(numbers)
+    newGame = GameState(numbers, turn=choose_first_player(), algorithm=choose_algorithm())
+
     print("Game started!")
+
     while not newGame.is_finish():
         newGame.print_state()
         if newGame.turn:
             human_move(newGame)
         else:
             ai_move(newGame)
-# main
+
+    print("\nGame finished!")
+    newGame.print_state()
+
+    if newGame.ai_points > newGame.human_points:
+        print("AI wins!")
+    elif newGame.ai_points < newGame.human_points:
+        print("Human wins!")
+    else:
+        print("Draw!")        
+
+def choose_first_player():
+    while True:
+        choice = input("Who goes first? (h for human, a for AI): ")
+        if choice.lower() == 'h':
+            return True
+        elif choice.lower() == 'a':
+            return False
+        else:
+            print("Invalid choice")   
+
+def choose_algorithm():
+    while True:
+        choice = input("Choose algorithm (minimax or alpha-beta): ")
+        if choice.lower() == 'minimax':
+            return True
+        elif choice.lower() == 'alpha-beta':
+            return False
+        else:
+            print("Invalid choice")   
+
+
 length = user_input()
 if length is not None:
     GameStart(length)
-
-
-
