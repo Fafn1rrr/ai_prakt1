@@ -82,13 +82,86 @@ def minimax(state, depth):
 
         return (best_value, best_move)         # Atgriežam minimālo vērtību un atbilstošo gājienu
 
-def alpha_beta():
-    return 0
-    
+def alpha_beta(state, depth, alpha=-math.inf, beta=math.inf):
+    """
+    Funkcija realizē minimax algoritmu ar alpha-beta atzarošanu.
+
+    Tā atgriež:
+    best_value – labāko novērtējumu (stāvokļa vērtību)
+    best_move – labāko gājienu (piemēram ("take", i), ("split2", i), ("split4", i))
+
+    depth – cik dziļi tiek pārmeklēts spēles koks
+    alpha – labākā (lielākā) vērtība, ko līdz šim garantē MAX spēlētājs
+    beta – labākā (mazākā) vērtība, ko līdz šim garantē MIN spēlētājs
+    """
+    # Ja spēle ir beigusies (virkne tukša),
+    # tad aprēķinām precīzu rezultātu: AI punkti - cilvēka punkti.
+    # Šī ir terminālā virsotne spēles kokā.
+    if state.is_finish():
+        return (state.ai_points - state.human_points, None)
+    # Ja esam sasnieguši maksimālo pārmeklēšanas dziļumu,
+    # izmantojam evristisko funkciju, lai novērtētu stāvokli.
+    if depth == 0:
+        return (heuristic(state), None)
+    # Ģenerējam visus iespējamos gājienus no pašreizējā stāvokļa
+    moves = generate_moves(state)
+    # AI gājiens (MAX spēlētājs)
+    if not state.turn:
+        best_value = -math.inf   # sākam ar ļoti mazu vērtību
+        best_move = None
+        # Izskatām visus iespējamos gājienus
+        for move, idx in moves:
+            # Izveidojam bērna stāvokli (spēles kopiju)
+            child = copy.deepcopy(state)
+            # Pielietojam gājienu un pārslēdzam spēlētāju
+            child = apply_move(child, move, idx)
+            # Rekursīvi izsaucam alpha-beta nākamajam dziļumam
+            value, _ = alpha_beta(child, depth - 1, alpha, beta)
+            # Ja atrastā vērtība ir labāka par pašreizējo,
+            # saglabājam to kā labāko gājienu
+            if value > best_value:
+                best_value = value
+                best_move = (move, idx)
+            # Atjauninām alpha vērtību
+            # alpha glabā labāko MAX rezultātu līdz šim
+            alpha = max(alpha, best_value)
+            # Alpha-beta atzarošana:
+            # ja beta <= alpha, tālākos zarus nav jēgas skatīt,
+            # jo pretinieks šo zaru nekad neizvēlēsies
+            if beta <= alpha:
+                break
+        # Atgriežam labāko atrasto vērtību un gājienu
+        return (best_value, best_move)
+    # Cilvēka gājiens (MIN spēlētājs)
+    else:
+        best_value = math.inf    # sākam ar ļoti lielu vērtību
+        best_move = None
+        # Izskatām visus iespējamos gājienus
+        for move, idx in moves:
+            # Izveidojam bērna stāvokļa kopiju
+            child = copy.deepcopy(state)
+            # Pielietojam gājienu
+            child = apply_move(child, move, idx)
+            # Rekursīvs izsaukums nākamajam dziļumam
+            value, _ = alpha_beta(child, depth - 1, alpha, beta)
+            # Ja atrastā vērtība ir mazāka par pašreizējo,
+            # saglabājam to kā labāko (MIN izvēlas mazāko)
+            if value < best_value:
+                best_value = value
+                best_move = (move, idx)
+            # Atjauninām beta vērtību
+            # beta glabā labāko MIN rezultātu līdz šim
+            beta = min(beta, best_value)
+            # Alpha-beta atzarošana
+            # ja beta <= alpha, pārtraucam šī zara izskatīšanu
+            if beta <= alpha:
+                break
+        # Atgriežam minimālo vērtību un atbilstošo gājienu
+        return (best_value, best_move)
 # Iespējamie gājieni
 def take(state,index):
     return state.numbers.pop(index)
-
+    
 def split2(state,index):
     state.numbers.pop(index)
     state.numbers.insert(index, 1)
@@ -177,5 +250,6 @@ def GameStart(numbers):
 length = user_input()
 if length is not None:
     GameStart(length)
+
 
 
