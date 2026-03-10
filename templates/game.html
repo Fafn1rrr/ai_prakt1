@@ -8,7 +8,7 @@
     <div>
       <h1 class="mb-0">Game</h1>
       <div class="text-muted">
-        Starter: <b>{{ starter }}</b> |
+        Starter: <b>{{ starter }}</b>
         Algorithm: <b>{{ algo }}</b>
       </div>
     </div>
@@ -27,14 +27,17 @@
         <div class="card-body">
           <h5 class="card-title">Score</h5>
           <p class="mb-1">Human: <b>{{ human_points }}</b></p>
-          <p class="mb-2">AI: <b>{{ ai_points }}</b></p>
+          <p class="mb-2">Computer: <b>{{ ai_points }}</b></p>
 
           <div>
             Turn:
             {% if turn == "human" %}
               <span class="badge bg-success">Human</span>
             {% else %}
-              <span class="badge bg-warning text-dark">AI</span>
+              <span class="badge bg-warning text-dark">Computer</span>
+            {% endif %}
+            {% if last_ai_move %}
+              <div class="small text-muted mt-1">Last computer move: {{ last_ai_move }}</div>
             {% endif %}
           </div>
         </div>
@@ -45,7 +48,7 @@
         <h5 class="mb-1">Game finished!</h5>
         <div>Winner: <b>{{ winner }}</b></div>
         <div class="mt-2">
-          <a href="#" class="btn btn-primary">Start again</a>
+          <a href="/restart" class="btn btn-primary">Start again</a>
         </div>
       </div>
       {% endif %}
@@ -63,8 +66,8 @@
             <div class="card-body p-2">
               <div class="display-6">{{ n }}</div>
 
-              {# {% if (turn == "human") and (not finished) %} #}
-              <form method="POST" action="#" class="d-grid gap-1 mt-2">
+              {% if (turn == "human") and (not finished) %}
+              <form method="POST" action="/move" class="d-grid gap-1 mt-2">
                 <input type="hidden" name="index" value="{{ loop.index0 }}">
                 <button class="btn btn-sm btn-primary" name="action" value="take">Take</button>
 
@@ -76,9 +79,9 @@
                   <button class="btn btn-sm btn-outline-primary" name="action" value="split4">Split 4 → 2+2</button>
                 {% endif %}
               </form>
-              {# {% else %} #}
+              {% else %}
                 <div class="text-muted small mt-2">No actions</div>
-              {# {% endif %} #}
+              {% endif %}
             </div>
           </div>
           {% endfor %}

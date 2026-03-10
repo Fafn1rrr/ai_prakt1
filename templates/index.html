@@ -4,8 +4,12 @@
 
 {% block content %}
   <div class="d-flex container py-4 justify-content-center flex-wrap align-baseline gap-4">
-    <h1 class="align-self-center display-1">Skaitļu spēle</h1>
-    <h2 class="align-self-center display-4">Virknes garums:</h2>
+    <div class="d-flex justify-content-center w-100">
+      <h1 class="align-self-center display-1">Skaitļu spēle</h1>
+    </div>
+    <div class="d-flex justify-content-center w-100">
+      <h2 class="align-self-center display-4">Virknes garums:</h2>
+    </div>
     <form action="/options" method="POST" class="d-flex justify-content-between align-self-center w-75 gap-2">
       <input
         type="number"
