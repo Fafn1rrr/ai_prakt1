@@ -1,233 +1,159 @@
 from flask import Flask, render_template, request, redirect, url_for, session
 import random
 import math
-import copy
+import time
 
 app = Flask(__name__)
 app.secret_key = "change-me-please"
 
-# Чтобы не висло на каждом клике (потом увеличишь)
-MINIMAX_DEPTH = 2
-ALPHABETA_DEPTH = 3
+# Meklēšanas dziļums
+MINIMAX_DEPTH = 8
+ALPHABETA_DEPTH = 8
 
 
 
-
-class GameState:
-    def __init__(self, numbers, turn, algorithm, human_points=0, ai_points=0):
-        self.numbers = numbers
+class Node:
+    def __init__(self, numbers, turn, algorithm, human_points, ai_points, move_desc=""):
+        self.numbers = sorted(numbers)
         self.human_points = human_points
         self.ai_points = ai_points
         self.turn = turn          # True = human, False = ai
         self.algorithm = algorithm # True = minimax, False = alpha-beta
+        self.children = [] # Saraksts ar iespējamiem nākamajiem stāvokļiem
+        self.move_desc = move_desc # Teksts, kas apraksta izdarīto gājienu
+        self.value = None # Mezglam aprēķinātā vērtība (heiristiskā funkcija)
 
+         # Pārbauda, vai spēle ir beigusies
     def is_finish(self):
         return len(self.numbers) == 0
+    
+      # Ģenerē visus iespējamos bērnmezglus no pašreizējā stāvokļa
+    def generate_children(self):
+        moves = [] # Saraksts, kurā glabāsies visi iespējamie gājieni
+        unique_numbers = set(self.numbers) # Iegūst unikālos skaitļus, lai neveidotu liekus vienādus gājienus
+        
+        # Punktu tabula par skaitļa paņemšanu
+        # Game rules: 1 un 2 dod 1 punktu, 3 dod 3 punktus, 4 dod 2 punktus
+        # Split 2 +1+1 dod 1 punktu, Split 4 -> 2+2 dod 2 punktus
+        take_points = {
+            1: 1,
+            2: 1,
+            3: 3,
+            4: 2 
+        }       
+        # 1. darbība: paņemt vienu skaitli
+        for num in unique_numbers:
+            new_seq = self.numbers.copy() # Izveido skaitļu saraksta kopiju
+            new_seq.remove(num)  # Izņem izvēlēto skaitli
+            gained = take_points[num] # Nosaka, cik punktus dod šis skaitlis
+            if self.turn:  # human, pievieno punktus cilvēkam un izveido jaunu mezglu ar atjauninātu stāvokli
+                moves.append(Node(new_seq, False, self.algorithm, self.human_points + gained, self.ai_points, move_desc = f"Human took {num}"))
+            else:           # ai, pievieno punktus AI un izveido jaunu mezglu ar atjauninātu stāvokli
+                moves.append(Node(new_seq, True, self.algorithm, self.human_points, self.ai_points + gained, move_desc = f"AI took {num}"))
+        if 2 in self.numbers:
+            new_seq = self.numbers.copy()
+            new_seq.remove(2)
+            new_seq.extend([1, 1])
+            if self.turn:  # human
+                moves.append(Node(new_seq, False, self.algorithm, self.human_points + 1 , self.ai_points, move_desc = f"Human split 2"))
+            else:           # ai
+                moves.append(Node(new_seq, True, self.algorithm, self.human_points , self.ai_points + 1, move_desc = f"AI split 2"))                    
+        if 4 in self.numbers:
+            new_seq = self.numbers.copy()
+            new_seq.remove(4)
+            new_seq.extend([2, 2])
+            if self.turn:  # human
+                moves.append(Node(new_seq, False, self.algorithm, self.human_points + 2, self.ai_points, move_desc = f"Human split 4"))
+            else:           # ai
+                moves.append(Node(new_seq, True, self.algorithm, self.human_points, self.ai_points + 2, move_desc = f"AI split 4"))
+        self.children = moves # Saglabā visus atrastos bērnmezglus
+        return moves # Atgriež iespējamo gājienu sarakstu
+    
+def heuristic(node):
+    score_diff = node.ai_points - node.human_points # Aprēķina punktu starpību par labu AI
+ # Šeit vēlāk var izveidot gudrāku heiristisko funkciju  
+    return score_diff
+    
+def minimax(node, depth):
+    #print(f"Evaluating leaf: {node.move_desc} |value {heuristic(node)} | depth: {depth} | value: {heuristic(node)} | Human: {node.human_points}, AI: {node.ai_points}, Remaining: {node.numbers}", flush=True)
+    if depth == 0 or node.is_finish(): # Ja sasniegts maksimālais dziļums vai spēle beigusies, atgriež heuristisko novērtējumu
+        return heuristic(node), None
 
-    def switch_turn(self):
-        self.turn = not self.turn
+    if not node.turn:  # AI MAX
+        best_value = -math.inf # Sākotnēji labākā vērtība ir ļoti maza
+        best_node = None # Labākais bērnmezgls sākumā nav zināms
+        for child in node.generate_children(): # Iziet cauri visiem iespējamajiem gājieniem
+            value, _ = minimax(child, depth - 1) # Rekursīvi novērtē bērnmezglu
+            #print(f"Minimax AI evaluating move: {child.move_desc} | value: {value}", flush=True)
+            if value > best_value:  # Ja atrasta labāka vērtība
+                best_value = value # Atjauno labāko vērtību
+                best_node = child # Saglabā atbilstošo mezglu
+        return best_value, best_node # Atgriež labāko atrasto vērtību un mezglu
 
-
-def minimax(state, depth):
-    if state.is_finish():
-        return (state.ai_points - state.human_points, None)
-
-    if depth == 0:
-        return (heuristic(state), None)
-
-    moves = generate_moves(state)
-
-    if not state.turn:  # AI MAX
-        best_value = -math.inf
-        best_move = None
-        for move, idx in moves:
-            child = copy.deepcopy(state)
-            child = apply_move(child, move, idx)
-            value, _ = minimax(child, depth - 1)
-            if value > best_value:
-                best_value = value
-                best_move = (move, idx)
-        return (best_value, best_move)
-
-    else:  # Human MIN
+    else:  # Human MIN # Ja tagad ir cilvēka gājiens, tas cenšas minimizēt vērtību
         best_value = math.inf
-        best_move = None
-        for move, idx in moves:
-            child = copy.deepcopy(state)
-            child = apply_move(child, move, idx)
+        best_node = None
+        for child in node.generate_children():
             value, _ = minimax(child, depth - 1)
+            #print(f"Minimax Human evaluating move: {child.move_desc} | value: {value}", flush=True)
             if value < best_value:
                 best_value = value
-                best_move = (move, idx)
-        return (best_value, best_move)
+                best_node = child
+        return best_value, best_node
 
 
-def alpha_beta(state, depth, alpha=-math.inf, beta=math.inf):
-    if state.is_finish():
-        return (state.ai_points - state.human_points, None)
-
-    if depth == 0:
-        return (heuristic(state), None)
-
-    moves = generate_moves(state)
-
-    if not state.turn:  # AI MAX
+def alpha_beta(node, depth, alpha=-math.inf, beta=math.inf):
+    if depth == 0 or node.is_finish():
+        return heuristic(node), None
+    
+    if not node.turn:  # AI MAX
         best_value = -math.inf
-        best_move = None
-        for move, idx in moves:
-            child = copy.deepcopy(state)
-            child = apply_move(child, move, idx)
+        best_node = None
+        for child in node.generate_children():
             value, _ = alpha_beta(child, depth - 1, alpha, beta)
 
             if value > best_value:
                 best_value = value
-                best_move = (move, idx)
+                best_node = child
 
-            alpha = max(alpha, best_value)
+            alpha = max(alpha, best_value) # Atjauno alpha robežu
             if beta <= alpha:
-                break
-        return (best_value, best_move)
+                break  # Ja vairs nav jēgas pētīt tālāk
+        return best_value, best_node
 
     else:  # Human MIN
         best_value = math.inf
-        best_move = None
-        for move, idx in moves:
-            child = copy.deepcopy(state)
-            child = apply_move(child, move, idx)
+        best_node = None
+        for child in node.generate_children():
             value, _ = alpha_beta(child, depth - 1, alpha, beta)
 
             if value < best_value:
                 best_value = value
-                best_move = (move, idx)
+                best_node = child
 
             beta = min(beta, best_value)
             if beta <= alpha:
                 break
-        return (best_value, best_move)
+        return best_value, best_node
 
+# Funkcija, kas izpilda AI gājienu un atgriež aprakstu
+def ai_do_turn_and_get_text(node):
+    
+    if node.algorithm:
+        _, best_node = minimax(node, depth=MINIMAX_DEPTH)
+    else:
+        _, best_node = alpha_beta(node, depth=ALPHABETA_DEPTH)
 
-def take(state, index):
-    return state.numbers.pop(index)
-
-
-def split2(state, index):
-    state.numbers.pop(index)
-    state.numbers.insert(index, 1)
-    state.numbers.insert(index, 1)
-    return state
-
-
-def split4(state, index):
-    state.numbers.pop(index)
-    state.numbers.insert(index, 2)
-    state.numbers.insert(index, 2)
-    return state
-
-
-def apply_move(state, move, index):
-    if index < 0 or index >= len(state.numbers):
-        return state
-
-    if move == "take":
-        value = take(state, index)
-        if state.turn:
-            state.human_points += value
-        else:
-            state.ai_points += value
-
-    elif move == "split2":
-        if state.numbers[index] != 2:
-            return state
-        split2(state, index)
-        # split2: +1 point to opponent
-        if state.turn:
-            state.ai_points += 1
-        else:
-            state.human_points += 1
-
-    elif move == "split4":
-        if state.numbers[index] != 4:
-            return state
-        split4(state, index)
-        # split4: -1 point from opponent
-        if state.turn:
-            state.ai_points -= 1
-        else:
-            state.human_points -= 1
-
-    state.switch_turn()
-    return state
-
-
-def ai_move(state):
-    # IMPORTANT: возвращаем state, чтобы нигде не превратить его в None
-    if state.algorithm:  # minimax
-        _, move = minimax(state, depth=MINIMAX_DEPTH)
-    else:               # alpha-beta
-        _, move = alpha_beta(state, depth=ALPHABETA_DEPTH)
-
-    if move is None:
-        return state
-
-    action, index = move
-    apply_move(state, action, index)
-    return state
-
-def ai_do_turn_and_get_text(state):
-    # вычисляем лучший ход так же, как ai_move
-    if state.algorithm:  # minimax
-        _, move = minimax(state, depth=MINIMAX_DEPTH)
-    else:                # alpha-beta
-        _, move = alpha_beta(state, depth=ALPHABETA_DEPTH)
-
-    if move is None:
-        return None
-
-    action, index = move
-
-    # для красоты можно показать и число, которое было выбрано
-    chosen = state.numbers[index] if 0 <= index < len(state.numbers) else None
-
-    apply_move(state, action, index)
-
-    if chosen is None:
-        return f"{action} (index {index})"
-    return f"{action} {chosen} (index {index})"
-
-def heuristic(state):
-    a = 3
-    b = 2
-    return a * (state.ai_points - state.human_points) + b * (
-        4 * count(state, 4) + 3 * count(state, 3) + 3 * count(state, 2) + count(state, 1)
-    )
-
-
-def count(state, value):
-    cnt = 0
-    for i in state.numbers:
-        if i == value:
-            cnt += 1
-    return cnt
-
-
-def generate_moves(state):
-    moves = []
-    for i in range(len(state.numbers)):
-        moves.append(("take", i))
-        if state.numbers[i] == 2:
-            moves.append(("split2", i))
-        if state.numbers[i] == 4:
-            moves.append(("split4", i))
-    return moves
-
-
-
+    if best_node is None:
+        return node, None
+    return best_node, best_node.move_desc
+# Ģenerē sākotnējo nejaušo skaitļu sarakstu
 def generate_numbers(length):
     return [random.randint(1, 4) for _ in range(length)]
 
-
+# Atjauno spēles stāvokli no sesijā saglabātajiem datiem
 def make_state_from_session(d):
-    return GameState(
+    return Node(
         numbers=d["numbers"],
         turn=d["turn_bool"],
         algorithm=d["algo_bool"],
@@ -235,7 +161,7 @@ def make_state_from_session(d):
         ai_points=d["ai_points"]
     )
 
-
+# Saglabā spēles stāvokli sesijā
 def save_state_to_session(state, meta):
     session["game_view"] = {
         "length": meta["length"],
@@ -246,11 +172,12 @@ def save_state_to_session(state, meta):
         "ai_points": state.ai_points,
         "turn_bool": state.turn,      # bool
         "algo_bool": state.algorithm,  # bool
-        "last_ai_move": meta.get("last_ai_move")
+        "last_ai_move": meta.get("last_ai_move"),
+        "nodes_count": meta.get("nodes_count")
     }
     session.modified = True  # важно для стабильности сохранения
 
-
+# Nosaka uzvarētāju, ja spēle ir beigusies
 def calc_winner(state):
     if not state.is_finish():
         return None
@@ -275,7 +202,7 @@ def options():
         return render_template("index.html", error="Ievadi skaitli no 15 līdz 20!")
 
     length = int(length_str)
-    if length < 15 or length > 20:
+    if length < 15 or length > 21:
         return render_template("index.html", error="Garumam jābūt 15..20!")
 
     return render_template("options.html", length=length, error=None)
@@ -289,7 +216,7 @@ def game():
             return redirect(url_for("index"))
 
         length = int(length_str)
-        if length < 15 or length > 20:
+        if length < 15 or length > 21:
             return redirect(url_for("index"))
 
         starter = request.form.get("starter", "human")   # human/ai
@@ -298,36 +225,49 @@ def game():
         turn_bool = (starter == "human")
         algo_bool = (algo_str == "minimax")
 
-        state = GameState(numbers=generate_numbers(length), turn=turn_bool, algorithm=algo_bool)
+        node = Node(numbers=generate_numbers(length), turn=turn_bool,human_points=0, ai_points=0, algorithm=algo_bool)
         meta = {"length": length, "starter": starter, "algo": algo_str}
 
         # если первым ходит AI — ход AI
-        if (not state.turn) and (not state.is_finish()):
-            meta["last_ai_move"] = ai_do_turn_and_get_text(state)
+        if not node.turn and not node.is_finish():
+            node, text = ai_do_turn_and_get_text(node)
+            meta["last_ai_move"] = text
+            meta["nodes_count"] = None
 
-        save_state_to_session(state, meta)
+        save_state_to_session(node, meta)
         return redirect(url_for("game"))
 
     data = session.get("game_view")
     if not data:
         return redirect(url_for("index"))
 
-    state = make_state_from_session(data)
-    finished = state.is_finish()
-    winner = calc_winner(state)
+    node = make_state_from_session(data)
+    finished = node.is_finish()
+    winner = calc_winner(node)
+    moves = []
+    mapped_moves = {}
 
+    if node.turn and not finished:  # ход человека
+        moves = node.generate_children()
+
+    for idx, m in enumerate(moves):
+        mapped_moves[m.move_desc] = idx
+
+        
     return render_template(
         "game.html",
         length=data["length"],
         starter=data["starter"],
         algo=data["algo"],
-        numbers=state.numbers,
-        human_points=state.human_points,
-        ai_points=state.ai_points,
-        turn=("human" if state.turn else "ai"),
+        numbers=node.numbers,
+        mapped_moves=mapped_moves,
+        human_points=node.human_points,
+        ai_points=node.ai_points,
+        turn=("human" if node.turn else "ai"),
         finished=finished,
         winner=winner,
-        last_ai_move=data.get("last_ai_move")
+        last_ai_move=data.get("last_ai_move"),
+        nodes_count=data.get("nodes_count")
     )
 
 
@@ -337,32 +277,33 @@ def move():
     if not data:
         return redirect(url_for("index"))
 
-    state = make_state_from_session(data)
+    node = make_state_from_session(data)
 
-    if state.is_finish():
+    if node.is_finish():
         return redirect(url_for("game"))
 
     # кнопки доступны только человеку, но на всякий случай
-    if not state.turn:
+    if not node.turn:
+        return redirect(url_for("game"))
+    
+    move_id_str = request.form.get("move_id")
+
+    if move_id_str is None or not move_id_str.isdigit():
         return redirect(url_for("game"))
 
-    index_str = request.form.get("index", "").strip()
-    action = request.form.get("action", "").strip()
+    move_id = int(move_id_str)
 
-    if (not index_str.isdigit()) or (action not in ("take", "split2", "split4")):
-        return redirect(url_for("game"))
+    children = node.generate_children()
+    node = children[move_id]
 
-    idx = int(index_str)
-
-    # ход человека
-    apply_move(state, action, idx)
 
     meta = {"length": data["length"], "starter": data["starter"], "algo": data["algo"]}
     # если теперь ход AI — ход AI
-    if (not state.is_finish()) and (not state.turn):
-        meta["last_ai_move"] = ai_do_turn_and_get_text(state)
-
-    save_state_to_session(state, meta)
+    if (not node.is_finish()) and (not node.turn):
+        node, text = ai_do_turn_and_get_text(node)
+        meta["last_ai_move"] = text
+        meta["nodes_count"] = None
+    save_state_to_session(node, meta)
 
     return redirect(url_for("game"))
 
@@ -380,15 +321,15 @@ def restart():
     turn_bool = (starter == "human")
     algo_bool = (algo_str == "minimax")
 
-    state = GameState(numbers=generate_numbers(length), turn=turn_bool, algorithm=algo_bool)
+    node = Node(numbers=generate_numbers(length), turn=turn_bool,human_points=0, ai_points=0, algorithm=algo_bool)
     meta = {"length": length, "starter": starter, "algo": algo_str, "last_ai_move": None}
 
-    if (not state.turn) and (not state.is_finish()):
-        meta["last_ai_move"] = ai_do_turn_and_get_text(state)
+    if (not node.turn) and (not node.is_finish()):
+        node, meta["last_ai_move"] = ai_do_turn_and_get_text(node)
 
-    save_state_to_session(state, meta)
+    save_state_to_session(node, meta)
     return redirect(url_for("game"))
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, use_reloader=False)
