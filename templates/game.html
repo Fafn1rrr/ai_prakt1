@@ -38,6 +38,7 @@
             {% endif %}
             {% if last_ai_move %}
               <div class="small text-muted mt-1">Last computer move: {{ last_ai_move }}</div>
+              <p>Nodes explored: {{ nodes_count }}</p>
             {% endif %}
           </div>
         </div>
@@ -65,20 +66,37 @@
           <div class="card text-center" style="width: 150px;">
             <div class="card-body p-2">
               <div class="display-6">{{ n }}</div>
-
               {% if (turn == "human") and (not finished) %}
-              <form method="POST" action="/move" class="d-grid gap-1 mt-2">
-                <input type="hidden" name="index" value="{{ loop.index0 }}">
-                <button class="btn btn-sm btn-primary" name="action" value="take">Take</button>
-
-                {% if n == 2 %}
-                  <button class="btn btn-sm btn-outline-primary" name="action" value="split2">Split 2 → 1+1</button>
-                {% endif %}
-
-                {% if n == 4 %}
-                  <button class="btn btn-sm btn-outline-primary" name="action" value="split4">Split 4 → 2+2</button>
-                {% endif %}
-              </form>
+                <form method="POST" action="/move" class="d-grid gap-1 mt-2">
+                  {% set take_key = "Human took " ~ n %}
+                  {% if take_key in mapped_moves %}
+                    <button class="btn btn-sm btn-primary"
+                            name="move_id"
+                            value="{{ mapped_moves[take_key] }}">
+                      Take
+                    </button>
+                  {% endif %}
+                  {% if n == 2 %}
+                    {% set split2_key = "Human split 2" %}
+                    {% if split2_key in mapped_moves %}
+                      <button class="btn btn-sm btn-outline-primary"
+                              name="move_id"
+                              value="{{ mapped_moves[split2_key] }}">
+                        Split 2 → 1+1
+                      </button>
+                    {% endif %}
+                  {% endif %}
+                  {% if n == 4 %}
+                    {% set split4_key = "Human split 4" %}
+                    {% if split4_key in mapped_moves %}
+                      <button class="btn btn-sm btn-outline-primary"
+                              name="move_id"
+                              value="{{ mapped_moves[split4_key] }}">
+                        Split 4 → 2+2
+                      </button>
+                    {% endif %}
+                  {% endif %}
+                </form>
               {% else %}
                 <div class="text-muted small mt-2">No actions</div>
               {% endif %}
