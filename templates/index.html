@@ -1,30 +1,43 @@
 {% extends "base.html" %}
 
-{% block title %}Main{% endblock %}
+{% block title %}Starter{% endblock %}
 
 {% block content %}
-  <div class="d-flex container py-4 justify-content-center flex-wrap align-baseline gap-4">
-    <div class="d-flex justify-content-center w-100">
-      <h1 class="align-self-center display-1">Skaitļu spēle</h1>
-    </div>
-    <div class="d-flex justify-content-center w-100">
-      <h2 class="align-self-center display-4">Virknes garums:</h2>
-    </div>
-    <form action="/options" method="POST" class="d-flex justify-content-between align-self-center w-75 gap-2">
-      <input
-        type="number"
-        name="length"
-        min="15"
-        max="20"
-        placeholder="enter...(15-20)"
-        class="display-5 border-0 w-100 text-center"
-        required
-      />
-      <button type="submit" class="btn btn-primary btn-lg align-baseline">Submit</button>
+<div class="w-50">
+  <div class="d-flex container py-4 justify-content-center flex-column align-baseline">
+    
+    <form action="/game" method="POST" class="d-flex flex-column align-self-center w-75 gap-2">
+      <h3 class="align-self-center ">Virknes garums:</h3>
+      <div class="d-flex container py-4 justify-content-center gap-4 flex-row align-baseline">
+
+        <input type="number" name="length" min="15" max="20" placeholder="enter...(15-20)" class="display-6 border-0 flex-fill text-center" required/>
+
+      </div>
+      <h3 class="align-self-center ">Who start?</h3>
+      <div class="d-flex container py-4 justify-content-center gap-4 flex-row align-baseline">
+
+        <input type="radio" class="btn-check" name="starter" id="starter_human" value="human" checked>
+        <label class="btn btn-outline-primary" for="starter_human">Player</label>
+
+        <input type="radio" class="btn-check" name="starter" id="starter_ai" value="ai">
+        <label class="btn btn-outline-primary" for="starter_ai">Computer</label>
+        
+      </div>
+      <h3 class="align-self-center ">What algorithm?</h3>
+      <div class="d-flex container py-4 justify-content-center gap-4 flex-row align-baseline">
+
+        <input type="radio" class="btn-check" name="algo" id="algo_minimax" value="minimax" checked>
+        <label class="btn btn-outline-primary" for="algo_minimax">Minimaks</label>
+
+        <input type="radio" class="btn-check" name="algo" id="algo_ab" value="alphabeta">
+        <label class="btn btn-outline-primary" for="algo_ab">Alfa-beta</label>
+        
+      </div>
+      <button type="submit" class="btn btn-primary btn-lg align-baseline">Start game</button>
     </form>
   {% if error %}
     <div class="alert alert-danger mt-3 text-center">{{ error }}</div>
   {% endif %}
   </div>
-  
+</div>
 {% endblock %}
