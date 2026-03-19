@@ -1,0 +1,8 @@
+@media only screen and (max-width: 736px) {
+     .w-75{
+          width: 100% !important;
+     }
+     .w-50{
+          width: 100% !important;
+     }
+}

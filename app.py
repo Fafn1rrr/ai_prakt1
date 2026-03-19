@@ -188,43 +188,31 @@ def calc_winner(state):
     return "Draw"
 
 
-
+#Maks ---->
 @app.route("/")
 def index():
     return render_template("index.html")
+#Maks ----<
 
-
-@app.route("/options", methods=["POST"])
-def options():
-    length_str = request.form.get("length", "").strip()
-
-    if not length_str.isdigit():
-        return render_template("index.html", error="Ievadi skaitli no 15 līdz 20!")
-
-    length = int(length_str)
-    if length < 15 or length > 21:
-        return render_template("index.html", error="Garumam jābūt 15..20!")
-
-    return render_template("options.html", length=length, error=None)
-
-
+#Maks ---->
 @app.route("/game", methods=["GET", "POST"])
 def game():
     if request.method == "POST":
         length_str = request.form.get("length", "").strip()
+
         if not length_str.isdigit():
-            return redirect(url_for("index"))
+            return render_template("index.html", error="Ievadi skaitli no 15 līdz 20!")
 
         length = int(length_str)
         if length < 15 or length > 21:
-            return redirect(url_for("index"))
+            return render_template("index.html", error="Garumam jābūt 15..20!")
 
         starter = request.form.get("starter", "human")   # human/ai
         algo_str = request.form.get("algo", "minimax")   # minimax/alphabeta
 
         turn_bool = (starter == "human")
         algo_bool = (algo_str == "minimax")
-
+#Maks ----<
         node = Node(numbers=generate_numbers(length), turn=turn_bool,human_points=0, ai_points=0, algorithm=algo_bool)
         meta = {"length": length, "starter": starter, "algo": algo_str}
 
@@ -270,7 +258,7 @@ def game():
         nodes_count=data.get("nodes_count")
     )
 
-
+#Maks ---->
 @app.route("/move", methods=["POST"])
 def move():
     data = session.get("game_view")
@@ -281,7 +269,7 @@ def move():
 
     if node.is_finish():
         return redirect(url_for("game"))
-
+#Maks ----<
     # кнопки доступны только человеку, но на всякий случай
     if not node.turn:
         return redirect(url_for("game"))
@@ -308,6 +296,7 @@ def move():
     return redirect(url_for("game"))
 
 
+#Maks ---->
 @app.route("/restart")
 def restart():
     data = session.get("game_view")
@@ -320,7 +309,7 @@ def restart():
 
     turn_bool = (starter == "human")
     algo_bool = (algo_str == "minimax")
-
+#Maks ----<
     node = Node(numbers=generate_numbers(length), turn=turn_bool,human_points=0, ai_points=0, algorithm=algo_bool)
     meta = {"length": length, "starter": starter, "algo": algo_str, "last_ai_move": None}
 
