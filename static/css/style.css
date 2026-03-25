@@ -1,8 +1,110 @@
-@media only screen and (max-width: 736px) {
-     .w-75{
-          width: 100% !important;
-     }
-     .w-50{
-          width: 100% !important;
-     }
+
+  h1, h2, h3, h4, h5, h6 {
+  color: #f8fafc;
+  }
+
+  p, span, label {
+  color: #cbd5f5;
+}
+input {
+  background: #1e293b;
+  border: 1px solid #475569;
+  color: #f1f5f9;
+}
+
+input::placeholder {
+  color: #94a3b8;
+}
+
+body {
+  background: linear-gradient(135deg, #11317c, #1e293b);
+}
+
+/* Cards */
+.card, .score-box, .number-card {
+  background: #27406f;
+  color: #e0ecff;
+  border-radius: 12px;
+  box-shadow: 0 6px 25px rgba(0,0,0,0.3);
+}
+
+.custom-card.text-center .card-body {
+  background: #34558b;
+  border-radius: 12px;
+  border: 1px solid #93c5fd;
+}
+
+.number-card h3 {
+  color: #445f83;
+}
+
+.custom-card.text-center {
+  border: 1px solid #60a5fa;
+}
+
+.number-value {
+  color: #f8fafc;
+  font-size: 3.25rem;
+  font-weight: 700;
+  line-height: 1;
+  text-shadow: none;
+}
+
+.btn-primary {
+  background: #3b82f6;
+  border: none;
+  color: white;
+}
+
+.btn-primary:hover {
+  background: #2563eb;
+}
+
+.btn-outline-primary {
+  border: 1px solid #60a5fa;
+  color: #93c5fd;
+}
+
+.btn-outline-primary:hover {
+  background: #60a5fa;
+  color: #0f172a;
+}
+
+.btn-outline-secondary {
+  border: 1px solid #ffffff;
+  color: #ffffff;
+}
+
+/* Split buttons */
+.btn-split {
+  background: transparent;
+  border: 1px solid #94a3b8;
+  color: #cbd5f5;
+}
+
+.btn-split:hover {
+  background: #475569;
+}
+
+/* Score panel */
+.score-box {
+  background: #34558b;
+}
+
+.badge-ai {
+  background: #facc15;
+  color: #1e293b;
+  font-weight: bold;
+}
+
+.no-actions {
+  color: #f8fafc !important;
+  font-weight: 600;
+}
+.text-muted {
+  color: #f8fafc !important;
+}
+
+.game-finished-title {
+  color: #055160;
 }

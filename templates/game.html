@@ -28,7 +28,8 @@
           <h5 class="card-title">Score</h5>
           <p class="mb-1">Human: <b>{{ human_points }}</b></p>
           <p class="mb-2">Computer: <b>{{ ai_points }}</b></p>
-
+          <p><b>Generated nodes:</b> {{ nodes_count }}</p>
+          <p><b>Time:</b> {{ "%.3f"|format(time_ms) if time_ms is not none else "-" }} ms</p>
           <div>
             Turn:
             {% if turn == "human" %}
@@ -38,7 +39,6 @@
             {% endif %}
             {% if last_ai_move %}
               <div class="small text-muted mt-1">Last computer move: {{ last_ai_move }}</div>
-              <p>Nodes explored: {{ nodes_count }}</p>
             {% endif %}
           </div>
         </div>
@@ -48,14 +48,18 @@
       <div class="card mt-2">
         <div class="card-body">
           <h5 class="card-title">Spēles noteikumi:</h5>
-          <p class="mb-1">if split tatatatata</p>
-          <p class="mb-1">67 bratuha</p>
+          <p class="mb-1">1 dod 1 punktu</p>
+          <p class="mb-1">2 dod 1 punktu</p>
+          <p class="mb-1">3 dod 3 punktu</p>
+          <p class="mb-1">4 dod 2 punktu</p>
+          <p class="mb-1">Sadalīt skaitli 2 skaitļos 1 un 1, atņemot pretiniekam 1 punktu.</p>
+          <p class="mb-1">Sadalīt skaitli 4 skaitļos 2 un 2, iegūstot 2 punktus.</p>
           <p class="mb-1">Good luck!</p>
         </div>
       </div>
       {% if finished %}
       <div class="alert alert-info mt-2">
-        <h5 class="mb-1">Game finished!</h5>
+        <h5 class="mb-1 game-finished-title">Game finished!</h5>
         <div>Winner: <b>{{ winner }}</b></div>
         <div class="mt-2">
           <a href="/restart" class="btn btn-primary">Start again</a>

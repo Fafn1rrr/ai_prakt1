@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, session
 import random
 import math
-import time
+import time     
 
 app = Flask(__name__)
 app.secret_key = "change-me-please"
@@ -10,6 +10,8 @@ app.secret_key = "change-me-please"
 MINIMAX_DEPTH = 8
 ALPHABETA_DEPTH = 8
 
+# Konsoles statistika
+PRINT_AI_STATS = True  
 
 
 class Node:
@@ -34,7 +36,7 @@ class Node:
         
         # Punktu tabula par skaitļa paņemšanu
         # Game rules: 1 un 2 dod 1 punktu, 3 dod 3 punktus, 4 dod 2 punktus
-        # Split 2 +1+1 dod 1 punktu, Split 4 -> 2+2 dod 2 punktus
+        # Split 2 +1+1 dod 0 punktu, Split 4 -> 2+2 dod 2 punktus
         take_points = {
             1: 1,
             2: 1,
@@ -55,9 +57,9 @@ class Node:
             new_seq.remove(2)
             new_seq.extend([1, 1])
             if self.turn:  # human
-                moves.append(Node(new_seq, False, self.algorithm, self.human_points + 1 , self.ai_points, move_desc = f"Human split 2"))
+                moves.append(Node(new_seq, False, self.algorithm, self.human_points + 0 , self.ai_points - 1, move_desc = f"Human split 2"))
             else:           # ai
-                moves.append(Node(new_seq, True, self.algorithm, self.human_points , self.ai_points + 1, move_desc = f"AI split 2"))                    
+                moves.append(Node(new_seq, True, self.algorithm, self.human_points - 1 , self.ai_points + 0, move_desc = f"AI split 2"))                    
         if 4 in self.numbers:
             new_seq = self.numbers.copy()
             new_seq.remove(4)
@@ -68,23 +70,45 @@ class Node:
                 moves.append(Node(new_seq, True, self.algorithm, self.human_points, self.ai_points + 2, move_desc = f"AI split 4"))
         self.children = moves # Saglabā visus atrastos bērnmezglus
         return moves # Atgriež iespējamo gājienu sarakstu
-    
+def make_stats():
+    return {
+        "calls": 0,   # cik reizes algoritma funkcija tika izsaukta
+        "leaves": 0,   # cik lapu mezgli tika novērtēti
+        "generated_nodes": 0 # cik mezglu tika ģenerēti
+     }
 def heuristic(node):
-    score_diff = node.ai_points - node.human_points # Aprēķina punktu starpību par labu AI
- # Šeit vēlāk var izveidot gudrāku heiristisko funkciju  
-    return score_diff
+    if node.is_finish():
+        return 10000 * (node.ai_points - node.human_points)
+
+    score_diff = node.ai_points - node.human_points
+    c2 = node.numbers.count(2)
+    c3 = node.numbers.count(3)
+    c4 = node.numbers.count(4)
+
+    side = 1 if not node.turn else -1
     
-def minimax(node, depth):
-    #print(f"Evaluating leaf: {node.move_desc} |value {heuristic(node)} | depth: {depth} | value: {heuristic(node)} | Human: {node.human_points}, AI: {node.ai_points}, Remaining: {node.numbers}", flush=True)
+    return (
+        10 * score_diff +
+        side * (1.0 * c2 + 1.5 * c3 + 2.0 * c4)
+    )
+    
+def minimax(node, depth, stats=None):
+    if stats is not None:
+        stats["calls"] += 1
     if depth == 0 or node.is_finish(): # Ja sasniegts maksimālais dziļums vai spēle beigusies, atgriež heuristisko novērtējumu
+        if stats is not None:
+            stats["leaves"] += 1
         return heuristic(node), None
+    children = node.generate_children()
+
+    if stats is not None:
+        stats["generated_nodes"] += len(children)
 
     if not node.turn:  # AI MAX
         best_value = -math.inf # Sākotnēji labākā vērtība ir ļoti maza
         best_node = None # Labākais bērnmezgls sākumā nav zināms
-        for child in node.generate_children(): # Iziet cauri visiem iespējamajiem gājieniem
-            value, _ = minimax(child, depth - 1) # Rekursīvi novērtē bērnmezglu
-            #print(f"Minimax AI evaluating move: {child.move_desc} | value: {value}", flush=True)
+        for child in children: # Iziet cauri visiem iespējamajiem gājieniem
+            value, _ = minimax(child, depth - 1, stats) # Rekursīvi novērtē bērnmezglu
             if value > best_value:  # Ja atrasta labāka vērtība
                 best_value = value # Atjauno labāko vērtību
                 best_node = child # Saglabā atbilstošo mezglu
@@ -93,24 +117,31 @@ def minimax(node, depth):
     else:  # Human MIN # Ja tagad ir cilvēka gājiens, tas cenšas minimizēt vērtību
         best_value = math.inf
         best_node = None
-        for child in node.generate_children():
-            value, _ = minimax(child, depth - 1)
-            #print(f"Minimax Human evaluating move: {child.move_desc} | value: {value}", flush=True)
+        for child in children:
+            value, _ = minimax(child, depth - 1, stats)
             if value < best_value:
                 best_value = value
                 best_node = child
         return best_value, best_node
 
 
-def alpha_beta(node, depth, alpha=-math.inf, beta=math.inf):
+def alpha_beta(node, depth, alpha=-math.inf, beta=math.inf, stats=None):
+    if stats is not None:
+        stats["calls"] += 1
     if depth == 0 or node.is_finish():
+        if stats is not None:
+            stats["leaves"] += 1
         return heuristic(node), None
     
+    children = node.generate_children()
+    if stats is not None:
+        stats["generated_nodes"] += len(children)
+
     if not node.turn:  # AI MAX
         best_value = -math.inf
         best_node = None
-        for child in node.generate_children():
-            value, _ = alpha_beta(child, depth - 1, alpha, beta)
+        for child in children:
+            value, _ = alpha_beta(child, depth - 1, alpha, beta, stats)
 
             if value > best_value:
                 best_value = value
@@ -124,8 +155,8 @@ def alpha_beta(node, depth, alpha=-math.inf, beta=math.inf):
     else:  # Human MIN
         best_value = math.inf
         best_node = None
-        for child in node.generate_children():
-            value, _ = alpha_beta(child, depth - 1, alpha, beta)
+        for child in children:
+            value, _ = alpha_beta(child, depth - 1, alpha, beta, stats)
 
             if value < best_value:
                 best_value = value
@@ -138,15 +169,30 @@ def alpha_beta(node, depth, alpha=-math.inf, beta=math.inf):
 
 # Funkcija, kas izpilda AI gājienu un atgriež aprakstu
 def ai_do_turn_and_get_text(node):
+    stats = make_stats()
+    start_time = time.perf_counter()
     
     if node.algorithm:
-        _, best_node = minimax(node, depth=MINIMAX_DEPTH)
+        best_value, best_node = minimax(node, depth=MINIMAX_DEPTH, stats=stats)
+        algo_name = "Minimax"
     else:
-        _, best_node = alpha_beta(node, depth=ALPHABETA_DEPTH)
-
+        best_value, best_node = alpha_beta(node, depth=ALPHABETA_DEPTH, stats=stats)
+        algo_name = "Alpha-Beta"
+    elapsed_ms = (time.perf_counter() - start_time) * 1000
+    if PRINT_AI_STATS:
+        print(
+            f"[{algo_name}] "
+            f"move={best_node.move_desc if best_node else 'None'} | "
+            f"value={best_value} | "
+            f"time={elapsed_ms:.3f} ms | "
+            f"calls={stats['calls']} | "
+            f"leaves={stats['leaves'] }"
+            f"generated_nodes={stats['generated_nodes'] }",
+            flush=True
+        )
     if best_node is None:
-        return node, None
-    return best_node, best_node.move_desc
+        return node, None, stats["generated_nodes"], elapsed_ms
+    return best_node, best_node.move_desc, stats["generated_nodes"], elapsed_ms
 # Ģenerē sākotnējo nejaušo skaitļu sarakstu
 def generate_numbers(length):
     return [random.randint(1, 4) for _ in range(length)]
@@ -173,9 +219,10 @@ def save_state_to_session(state, meta):
         "turn_bool": state.turn,      # bool
         "algo_bool": state.algorithm,  # bool
         "last_ai_move": meta.get("last_ai_move"),
-        "nodes_count": meta.get("nodes_count")
+        "nodes_count": meta.get("nodes_count"),
+        "time_ms": meta.get("time_ms")
     }
-    session.modified = True  # важно для стабильности сохранения
+    session.modified = True  
 
 # Nosaka uzvarētāju, ja spēle ir beigusies
 def calc_winner(state):
@@ -204,7 +251,7 @@ def game():
             return render_template("index.html", error="Ievadi skaitli no 15 līdz 20!")
 
         length = int(length_str)
-        if length < 15 or length > 21:
+        if length < 15 or length > 20:
             return render_template("index.html", error="Garumam jābūt 15..20!")
 
         starter = request.form.get("starter", "human")   # human/ai
@@ -214,13 +261,14 @@ def game():
         algo_bool = (algo_str == "minimax")
 #Maks ----<
         node = Node(numbers=generate_numbers(length), turn=turn_bool,human_points=0, ai_points=0, algorithm=algo_bool)
-        meta = {"length": length, "starter": starter, "algo": algo_str}
+        meta = {"length": length, "starter": starter, "algo": algo_str, "last_ai_move": None, "generated_nodes": None, "visited_nodes": None, "leaf_nodes": None, "time_ms": None}
 
-        # если первым ходит AI — ход AI
+        
         if not node.turn and not node.is_finish():
-            node, text = ai_do_turn_and_get_text(node)
+            node, text, generated_nodes, elapsed_ms = ai_do_turn_and_get_text(node)
             meta["last_ai_move"] = text
-            meta["nodes_count"] = None
+            meta["nodes_count"] = generated_nodes
+            meta["time_ms"] = elapsed_ms
 
         save_state_to_session(node, meta)
         return redirect(url_for("game"))
@@ -235,7 +283,7 @@ def game():
     moves = []
     mapped_moves = {}
 
-    if node.turn and not finished:  # ход человека
+    if node.turn and not finished:
         moves = node.generate_children()
 
     for idx, m in enumerate(moves):
@@ -255,7 +303,8 @@ def game():
         finished=finished,
         winner=winner,
         last_ai_move=data.get("last_ai_move"),
-        nodes_count=data.get("nodes_count")
+        nodes_count=data.get("nodes_count"),
+        time_ms=data.get("time_ms")
     )
 
 #Maks ---->
@@ -270,7 +319,7 @@ def move():
     if node.is_finish():
         return redirect(url_for("game"))
 #Maks ----<
-    # кнопки доступны только человеку, но на всякий случай
+    
     if not node.turn:
         return redirect(url_for("game"))
     
@@ -285,12 +334,13 @@ def move():
     node = children[move_id]
 
 
-    meta = {"length": data["length"], "starter": data["starter"], "algo": data["algo"]}
-    # если теперь ход AI — ход AI
+    meta = {"length": data["length"], "starter": data["starter"], "algo": data["algo"], "last_ai_move": None, "generated_nodes": None, "visited_nodes": None, "leaf_nodes": None, "time_ms": None}
+    
     if (not node.is_finish()) and (not node.turn):
-        node, text = ai_do_turn_and_get_text(node)
+        node, text, generated_nodes, elapsed_ms = ai_do_turn_and_get_text(node)
         meta["last_ai_move"] = text
-        meta["nodes_count"] = None
+        meta["nodes_count"] = generated_nodes
+        meta["time_ms"] = elapsed_ms
     save_state_to_session(node, meta)
 
     return redirect(url_for("game"))
@@ -311,10 +361,13 @@ def restart():
     algo_bool = (algo_str == "minimax")
 #Maks ----<
     node = Node(numbers=generate_numbers(length), turn=turn_bool,human_points=0, ai_points=0, algorithm=algo_bool)
-    meta = {"length": length, "starter": starter, "algo": algo_str, "last_ai_move": None}
+    meta = {"length": length, "starter": starter, "algo": algo_str, "last_ai_move": None, "generated_nodes": None, "visited_nodes": None, "leaf_nodes": None, "time_ms": None}
 
     if (not node.turn) and (not node.is_finish()):
-        node, meta["last_ai_move"] = ai_do_turn_and_get_text(node)
+        node, text, generated_nodes, elapsed_ms = ai_do_turn_and_get_text(node)
+        meta["last_ai_move"] = text
+        meta["nodes_count"] = generated_nodes
+        meta["time_ms"] = elapsed_ms
 
     save_state_to_session(node, meta)
     return redirect(url_for("game"))
