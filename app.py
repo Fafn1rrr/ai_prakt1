@@ -186,7 +186,7 @@ def ai_do_turn_and_get_text(node):
             f"value={best_value} | "
             f"time={elapsed_ms:.3f} ms | "
             f"calls={stats['calls']} | "
-            f"leaves={stats['leaves'] }"
+            f"leaves={stats['leaves']} | "
             f"generated_nodes={stats['generated_nodes'] }",
             flush=True
         )
