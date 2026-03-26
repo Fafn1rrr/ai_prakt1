@@ -81,6 +81,7 @@ def heuristic(node):
         return 10000 * (node.ai_points - node.human_points)
 
     score_diff = node.ai_points - node.human_points
+    c1 = node.numbers.count(1)
     c2 = node.numbers.count(2)
     c3 = node.numbers.count(3)
     c4 = node.numbers.count(4)
@@ -89,7 +90,7 @@ def heuristic(node):
     
     return (
         10 * score_diff +
-        side * (1.0 * c2 + 1.5 * c3 + 2.0 * c4)
+        side * (0.5 * c1 + 1.0 * c2 + 1.5 * c3 + 2.0 * c4)
     )
     
 def minimax(node, depth, stats=None):
