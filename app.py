@@ -7,7 +7,7 @@ app = Flask(__name__)
 app.secret_key = "change-me-please"
 
 # Meklēšanas dziļums
-MINIMAX_DEPTH = 8
+MINIMAX_DEPTH = 5
 ALPHABETA_DEPTH = 8
 
 # Konsoles statistika
